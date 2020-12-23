@@ -1,0 +1,359 @@
+								WORPRESS WITH NGINX WEBSERVER ON UBUNTU OS
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+						GET THE ROOT 
+sudo su
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+						UPDATE AND INSTALL TASK MANAGER
+
+apt update -y && aptt upgrade
+apt install htop
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+						MAKE SWAP PARTITION (OPTIONAL BUT RECOMMEDED)
+
+sudo fallocate -l 1G /swapfile
+
+sudo chmod 600 /swapfile
+
+sudo mkswap /swapfile
+
+sudo swapon /swapfile
+
+nano /etc/fstab
+
+/swapfile swap swap defaults 0 0
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+						INSTALL MARIADB SERVER
+
+apt install mysql-server wget
+
+mysql -u root -p
+
+CREATE DATABASE database_name CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+CREATE USER 'username'@'%' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON database_name.* TO 'username'@'%';
+							OR
+GRANT ALL ON database_name.* TO username @'%' IDENTIFIED BY 'password';
+
+FLUSH PRIVILEGES;
+
+EXIT;
+
+mysql_secure_installation
+
+(Type y press Enter)
+(Enter Password)
+(Type y press Enter and so on till All done)
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+						CONFIGURE DIRECORIES TO INSTALL WORPRESS
+
+mkdir -p /var/www/html/yourname.domain/
+
+sudo chown -R www-data: /var/www/html/yourname.domain
+
+cd /tmp && wget https://wordpress.org/latest.tar.gz && tar xf latest.tar.gz && sudo mv /tmp/wordpress/* /var/www/html/yourname.domain/
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+						CONFIGURE WP-CONFIG.PHP FILE
+
+cd /var/www/html/yourname.domain/ && ls
+
+cp wp-config-sample.php /home/server_username
+
+mv wp-config-sample.php wp-config.php
+
+nano wp-config.php 
+
+{
+
+define( 'DB_NAME', 'database_name' ); [Enter Your database name that you created in mysql Section]
+
+define( 'DB_USER', 'username' );	[Enter Your user name that you created in mysql Section]
+
+define( 'DB_PASSWORD', 'password' );	[Enter Your password that you created in mysql Section]
+
+define( 'DB_HOST', 'localhost' ); 	[Change it to]	 define( 'DB_HOST', '%' );
+
+define( 'DB_CHARSET', 'utf8' );		[Change it to]		define( 'DB_CHARSET', 'utf8mb4' );
+
+define( 'DB_COLLATE', '' );		[Change it to]		define( 'DB_COLLATE', 'utf8mb4_general_ci' );
+}
+
+(Enter DATABASE Name)
+
+(Enter username of the DATABASE)
+
+(Enter the Password of username)
+
+utf8mb4
+
+utf8mb4_general_ci
+
+						Install the Word Press Salts
+
+Go to this Link: 	https://api.wordpress.org/secret-key/1.1/salt/
+Copy all the Lines on the webpage
+Replace these Lines With:
+
+				define( 'AUTH_KEY',         'put your unique phrase here' );
+				define( 'SECURE_AUTH_KEY',  'put your unique phrase here' );
+				define( 'LOGGED_IN_KEY',    'put your unique phrase here' );
+				define( 'NONCE_KEY',        'put your unique phrase here' );
+				define( 'AUTH_SALT',        'put your unique phrase here' );
+				define( 'SECURE_AUTH_SALT', 'put your unique phrase here' );
+				define( 'LOGGED_IN_SALT',   'put your unique phrase here' );
+				define( 'NONCE_SALT',       'put your unique phrase here' );
+
+Press Ctrl + X for EXIT
+Press Y for Save and press Enter
+Done!
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+						INSTALL SOME DPENDENCIES
+
+sudo apt -y install lsb-release apt-transport-https ca-certificates wget
+
+sudo apt update && apt upgrade
+
+sudo apt-get -y install php7.4 php7.4-{bcmath,bz2,intl,gd,mbstring,mysql,zip} && sudo apt-get install nginx php7.4-fpm php7.4-cli php7.4-fpm php7.4-mysql php7.4-json php7.4-opcache php7.4-mbstring php7.4-xml php7.4-gd php7.4-curl php7.4-imagick
+
+apt remove apache2 && apt purge apache2 && apt autoremove 
+[Press Y for all]
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+						SERVER CONFGIRATIONS : START
+
+nano /etc/nginx/snippets/letsencrypt.conf
+
+location ^~ /.well-known/acme-challenge/ {
+	default_type "text/plain";
+	root /var/www/html/yourname.domain/letsencrypt/;
+}
+Press Ctrl + X for EXIT
+Press Y for Save and press Enter
+Done!
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+nano /etc/nginx/snippets/ssl.conf
+
+ssl_session_cache shared:le_nginx_SSL:1m;
+ssl_session_timeout 1d;
+ssl_session_tickets off;
+
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_prefer_server_ciphers on;
+ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+ssl_ecdh_curve secp384r1;
+
+ssl_stapling on;
+ssl_stapling_verify on;
+
+add_header Strict-Transport-Security "max-age=15768000; includeSubdomains; preload;";
+add_header Referrer-Policy "no-referrer, strict-origin-when-cross-origin";
+add_header X-Frame-Options SAMEORIGIN;
+add_header X-Content-Type-Options nosniff;
+add_header X-XSS-Protection "1; mode=block";
+
+(Press Ctrl + X for EXIT
+Press Y for Save and press Enter
+Done!
+)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+mkdir -p /etc/letsencrypt/
+
+nano /etc/letsencrypt/options-ssl-nginx.conf
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ssl_session_cache shared:le_nginx_SSL:1m;
+ssl_session_timeout 1d;
+ssl_session_tickets off;
+
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_prefer_server_ciphers on;
+ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+ssl_ecdh_curve secp384r1;
+
+ssl_stapling on;
+ssl_stapling_verify on;
+
+add_header Strict-Transport-Security "max-age=15768000; includeSubdomains; preload;";
+add_header Referrer-Policy "no-referrer, strict-origin-when-cross-origin";
+add_header X-Frame-Options SAMEORIGIN;
+add_header X-Content-Type-Options nosniff;
+add_header X-XSS-Protection "1; mode=block";
+
+(Press Ctrl + X for EXIT
+Press Y for Save and press Enter
+Done!
+)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+nano /etc/nginx/sites-available/yourname.domain
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+server {
+	listen 80 default_server;
+	listen [::]:80 default_server ipv6only=on;
+
+	server_name yourname.domain www.yourname.domain;
+	root /var/www/html/yourname.domain/;
+
+	index index.php;
+	location / {
+		try_files $uri $uri/ =404;
+	}
+}
+
+(Press Ctrl + X for EXIT
+Press Y for Save and press Enter
+Done!
+)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+sudo rm /etc/nginx/sites-enabled/default && sudo rm /etc/nginx/sites-available/default
+
+sudo ln -s /etc/nginx/sites-available/yourname.domain /etc/nginx/sites-enabled/yourname.domain
+
+sudo nginx -t  		{To Test the working of server you should See (nginx: configuration file /etc/nginx/nginx.conf test is successful)}
+
+sudo systemctl stop nginx && sudo systemctl start nginx
+
+sudo apt-get install software-properties-common
+
+sudo apt-get update
+
+sudo apt-get install certbot python3-certbot-nginx
+
+sudo mkdir -p /var/www/html/yourname.domain/letsencrypt/.well-known/acme-challenge
+
+sudo certbot --nginx
+
+nano /etc/nginx/sites-available/yourname.domain
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Redirect HTTP -> HTTPS
+server {
+listen 80;
+server_name www.yourname.domain yourname.domain;
+
+include snippets/letsencrypt.conf;
+return 301 https://yourname.domain$request_uri;
+}
+
+# Redirect WWW -> NON-WWW
+server {
+listen 443 ssl http2;
+server_name www.yourname.domain;
+
+ssl_certificate /etc/letsencrypt/live/yourname.domain/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/yourname.domain/privkey.pem;
+ssl_trusted_certificate /etc/letsencrypt/live/yourname.domain/chain.pem;
+include snippets/ssl.conf;
+
+return 301 https://yourname.domain$request_uri;
+}
+
+server {
+listen 443 ssl http2;
+server_name yourname.domain;
+
+root /var/www/html/yourname.domain;
+index index.php;
+
+# SSL parameters
+ssl_certificate /etc/letsencrypt/live/yourname.domain/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/yourname.domain/privkey.pem;
+ssl_trusted_certificate /etc/letsencrypt/live/yourname.domain/chain.pem;
+include snippets/ssl.conf;
+include snippets/letsencrypt.conf;
+
+# log files
+access_log /var/log/nginx/yourname.domain.access.log;
+error_log /var/log/nginx/yourname.domain.error.log;
+
+location = /favicon.ico {
+log_not_found off;
+access_log off;
+}
+
+location = /robots.txt {
+allow all;
+log_not_found off;
+access_log off;
+}
+
+location / {
+try_files $uri $uri/ /index.php?$args;
+}
+
+location ~ \.php$ {
+include snippets/fastcgi-php.conf;
+fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+}
+
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+expires max;
+log_not_found off;
+
+(Press Ctrl + X for EXIT
+Press Y for Save and press Enter
+Done!
+)
+
+								CONFIGURE SERVER : END
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+service nginx restart && service mysql restart && service php7.4-fpm restart
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+								SETUP CRON OR AUTO START TASK (MUST)
+
+nano /home/server_username/lt.sh
+
+----------------------------------------
+
+#!/bin/bash
+service nginx restart && service mysql restart && service php7.4-fpm restart
+
+----------------------------------------
+
+chmod +x /home/server_username/lt.sh
+
+sudo crontab -e
+
+20 3 * * * certbot renew --noninteractive --renew-hook /home/server_username/lt.sh
+
+(Press Ctrl + X for EXIT
+Press Y for Save and press Enter
+Done!
+)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+								CHANGING USER PASSWORDS
+
+pwssd root
+
+(Enter Password)
+
+passwd (Your username)
+
+(Enter Password)
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+								INSTALLING UFW FIREWALL
+
+apt install ufw && ufw enable -y
+
+ufw allow "Nginx Full" && ufw allow Openssh
+
+reboot
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
